@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LexiForge — AI Language & Creation Suite</title>
+<meta name="description" content="LexiForge: chatbot, image generator, story writer, shayari generator, caption generator, email writer, resume writer and code generator — free AI tools, one workspace.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="rack" id="rack">
+  <div class="rack-head">
+    <img class="brand-mark" src="logo.svg" alt="LexiForge">
+    <div class="rack-sub">AI Language &amp; Creation Suite</div>
+  </div>
+  <nav class="pegboard" id="pegboard"></nav>
+</div>
+
+<main class="bay">
+  <header class="bay-head">
+    <button class="hamburger" id="hamburger" aria-label="Open tools">☰</button>
+    <div>
+      <div class="bay-eyebrow" id="toolTag">TOOL 01</div>
+      <h1 id="toolTitle">AI Chatbot</h1>
+    </div>
+  </header>
+
+  <section class="bay-body">
+    <form id="toolForm" class="tool-form">
+      <label id="inputLabel" for="toolInput">Ask anything</label>
+      <textarea id="toolInput" rows="5" placeholder="Type here..." required></textarea>
+      <div class="form-row">
+        <button type="submit" class="run-btn" id="runBtn">Generate</button>
+        <span class="status" id="status"></span>
+      </div>
+    </form>
+
+    <div class="output-wrap" id="outputWrap" hidden>
+      <div class="output-bar">
+        <span>Output</span>
+        <button class="copy-btn" id="copyBtn" type="button">Copy</button>
+      </div>
+      <div class="output" id="output"></div>
+    </div>
+
+    <div class="chat-log" id="chatLog" hidden></div>
+  </section>
+</main>
+
+<div class="scrim" id="scrim"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
