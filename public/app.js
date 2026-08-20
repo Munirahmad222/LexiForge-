@@ -1,14 +1,23 @@
 (function () {
   const TOOLS = [
-    { id: 'chat', label: '🤖 AI Chat', placeholder: 'Ask me anything…', inputLabel: 'Ask anything', isChat: true },
-    { id: 'writing', label: '✍️ AI Writing', placeholder: 'Write a short story about a fisherman who finds a message in a bottle…', inputLabel: 'What should I write?' },
-    { id: 'image', label: '🎨 AI Image', placeholder: 'A lighthouse at sunset, watercolor style…', inputLabel: 'Describe the image', isImage: true, mode: 'image' },
-    { id: 'coding', label: '💻 AI Coding', placeholder: 'A Python function that merges two sorted lists…', inputLabel: 'What should the code do?' },
-    { id: 'seo', label: '📈 AI SEO', placeholder: 'A bakery in Lahore that sells custom birthday cakes…', inputLabel: 'What\u2019s the page/topic about?' },
-    { id: 'social', label: '📱 AI Social Media', placeholder: 'Sunset photo from the beach with friends…', inputLabel: 'Describe your post' },
-    { id: 'marketing', label: '🎯 AI Marketing', placeholder: 'A 20% off sale on handmade candles this weekend…', inputLabel: 'What are you promoting?' },
-    { id: 'business', label: '🧑\u200d💼 AI Business', placeholder: 'A subscription box for local, organic produce…', inputLabel: 'Describe your business idea' },
-    { id: 'logo', label: '🖼️ AI Logo/Design', placeholder: 'A coffee shop called Bean & Co, warm and rustic…', inputLabel: 'Describe your logo', isImage: true, mode: 'logo' }
+    { id: 'chat', label: '🤖 AI Chat', placeholder: 'Ask me anything…', inputLabel: 'Ask anything', isChat: true,
+      examples: ['Explain black holes simply', 'Plan a 3-day trip to Lahore', 'Debug my sleep schedule'] },
+    { id: 'writing', label: '✍️ AI Writing', placeholder: 'Write a short story about a fisherman who finds a message in a bottle…', inputLabel: 'What should I write?',
+      examples: ['A short story about a lost cat', 'A polite email asking for a deadline extension', 'A birthday poem for my sister'] },
+    { id: 'image', label: '🎨 AI Image', placeholder: 'A lighthouse at sunset, watercolor style…', inputLabel: 'Describe the image', isImage: true, mode: 'image',
+      examples: ['A cozy cabin in the snow', 'Cyberpunk street at night', 'Minimalist mountain line art'] },
+    { id: 'coding', label: '💻 AI Coding', placeholder: 'A Python function that merges two sorted lists…', inputLabel: 'What should the code do?',
+      examples: ['A responsive navbar in HTML/CSS', 'A JS function to debounce input', 'A Python script to rename files in bulk'] },
+    { id: 'seo', label: '📈 AI SEO', placeholder: 'A bakery in Lahore that sells custom birthday cakes…', inputLabel: 'What\u2019s the page/topic about?',
+      examples: ['A local plumbing service website', 'A blog post about home workouts', 'An online store for handmade jewelry'] },
+    { id: 'social', label: '📱 AI Social Media', placeholder: 'Sunset photo from the beach with friends…', inputLabel: 'Describe your post',
+      examples: ['New product launch announcement', 'Behind-the-scenes at our workshop', 'Weekend sale reminder'] },
+    { id: 'marketing', label: '🎯 AI Marketing', placeholder: 'A 20% off sale on handmade candles this weekend…', inputLabel: 'What are you promoting?',
+      examples: ['A limited-time discount code', 'A new subscription plan launch', 'A referral rewards program'] },
+    { id: 'business', label: '🧑\u200d💼 AI Business', placeholder: 'A subscription box for local, organic produce…', inputLabel: 'Describe your business idea',
+      examples: ['A one-page business plan for a food truck', 'A pitch summary for investors', 'A pricing strategy for a new app'] },
+    { id: 'logo', label: '🖼️ AI Logo/Design', placeholder: 'A coffee shop called Bean & Co, warm and rustic…', inputLabel: 'Describe your logo', isImage: true, mode: 'logo',
+      examples: ['A tech startup called Nova', 'A bakery called Sweet Crumb', 'A fitness brand called Iron Pulse'] }
   ];
 
   const pegboard = document.getElementById('pegboard');
@@ -26,6 +35,7 @@
   const output = document.getElementById('output');
   const copyBtn = document.getElementById('copyBtn');
   const chatLog = document.getElementById('chatLog');
+  const examplesEl = document.getElementById('examples');
 
   let activeId = 'chat';
   let chatHistory = [];
@@ -39,6 +49,18 @@
     `).join('');
     pegboard.querySelectorAll('.peg').forEach((btn) => {
       btn.addEventListener('click', () => selectTool(btn.dataset.id));
+    });
+  }
+
+  function renderExamples(t) {
+    examplesEl.innerHTML = (t.examples || []).map((ex) =>
+      `<button type="button" class="example-pill">${ex}</button>`
+    ).join('');
+    examplesEl.querySelectorAll('.example-pill').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        toolInput.value = btn.textContent;
+        toolInput.focus();
+      });
     });
   }
 
@@ -58,6 +80,7 @@
     chatLog.innerHTML = '';
     chatHistory = [];
     renderPegboard();
+    renderExamples(t);
     closeRack();
   }
 
