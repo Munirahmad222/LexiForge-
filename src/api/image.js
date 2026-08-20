@@ -1,5 +1,7 @@
 import { json } from '../utils.js';
 
+const LOGO_PREFIX = 'A clean, modern, minimalist vector-style logo design, flat colors, simple shapes, centered composition, plain white background, of: ';
+
 export async function handleImage(request, env) {
   let body;
   try {
@@ -8,8 +10,11 @@ export async function handleImage(request, env) {
     return json({ error: 'invalid request body' }, 400);
   }
 
-  const prompt = (body && body.prompt) ? String(body.prompt).trim() : '';
-  if (!prompt) return json({ error: 'prompt is required' }, 400);
+  const rawPrompt = (body && body.prompt) ? String(body.prompt).trim() : '';
+  const mode = (body && body.mode) || 'image';
+  if (!rawPrompt) return json({ error: 'prompt is required' }, 400);
+
+  const prompt = mode === 'logo' ? LOGO_PREFIX + rawPrompt : rawPrompt;
 
   try {
     const result = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt, steps: 6 });
