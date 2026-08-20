@@ -52,6 +52,12 @@
     });
   }
 
+  function autoGrow() {
+    toolInput.style.height = 'auto';
+    toolInput.style.height = Math.min(toolInput.scrollHeight, 220) + 'px';
+  }
+  toolInput.addEventListener('input', autoGrow);
+
   function renderExamples(t) {
     examplesEl.innerHTML = (t.examples || []).map((ex) =>
       `<button type="button" class="example-pill">${ex}</button>`
@@ -73,6 +79,7 @@
     toolSub.textContent = t.inputLabel;
     toolInput.placeholder = t.placeholder;
     toolInput.value = '';
+    toolInput.style.height = 'auto';
     statusEl.textContent = '';
     statusEl.classList.remove('err');
     outputWrap.hidden = true;
