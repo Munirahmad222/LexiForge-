@@ -1,14 +1,14 @@
 (function () {
   const TOOLS = [
-    { id: 'chatbot', label: 'AI Chatbot', placeholder: 'Ask me anything…', inputLabel: 'Your message', btn: 'Send', isChat: true },
-    { id: 'image', label: 'AI Image Generator', placeholder: 'A lighthouse at sunset, watercolor style…', inputLabel: 'Describe the image', btn: 'Generate image', isImage: true },
-    { id: 'prompt', label: 'AI Prompt Generator', placeholder: 'A cozy reading nook…', inputLabel: 'Rough idea', btn: 'Generate prompt' },
-    { id: 'story', label: 'AI Story Writer', placeholder: 'A fisherman who finds a message in a bottle…', inputLabel: 'Story idea / theme', btn: 'Write story' },
-    { id: 'shayari', label: 'AI Shayari Generator', placeholder: 'mohabbat, judai, ummeed…', inputLabel: 'Mauzu (topic)', btn: 'Shayari likhein' },
-    { id: 'caption', label: 'AI Caption Generator', placeholder: 'Sunset photo from the beach with friends…', inputLabel: 'Describe your post', btn: 'Generate captions' },
-    { id: 'email', label: 'AI Email Writer', placeholder: 'Follow up with a client about a delayed invoice…', inputLabel: 'What\u2019s the email about?', btn: 'Write email' },
-    { id: 'resume', label: 'AI Resume Writer', placeholder: '3 years as a graphic designer, led rebrand for a retail client…', inputLabel: 'Your role & experience', btn: 'Write resume' },
-    { id: 'code', label: 'AI Code Generator', placeholder: 'A Python function that merges two sorted lists…', inputLabel: 'What should the code do?', btn: 'Generate code' }
+    { id: 'chat', label: '🤖 AI Chat', placeholder: 'Ask me anything…', inputLabel: 'Ask anything', isChat: true },
+    { id: 'writing', label: '✍️ AI Writing', placeholder: 'Write a short story about a fisherman who finds a message in a bottle…', inputLabel: 'What should I write?' },
+    { id: 'image', label: '🎨 AI Image', placeholder: 'A lighthouse at sunset, watercolor style…', inputLabel: 'Describe the image', isImage: true, mode: 'image' },
+    { id: 'coding', label: '💻 AI Coding', placeholder: 'A Python function that merges two sorted lists…', inputLabel: 'What should the code do?' },
+    { id: 'seo', label: '📈 AI SEO', placeholder: 'A bakery in Lahore that sells custom birthday cakes…', inputLabel: 'What\u2019s the page/topic about?' },
+    { id: 'social', label: '📱 AI Social Media', placeholder: 'Sunset photo from the beach with friends…', inputLabel: 'Describe your post' },
+    { id: 'marketing', label: '🎯 AI Marketing', placeholder: 'A 20% off sale on handmade candles this weekend…', inputLabel: 'What are you promoting?' },
+    { id: 'business', label: '🧑\u200d💼 AI Business', placeholder: 'A subscription box for local, organic produce…', inputLabel: 'Describe your business idea' },
+    { id: 'logo', label: '🖼️ AI Logo/Design', placeholder: 'A coffee shop called Bean & Co, warm and rustic…', inputLabel: 'Describe your logo', isImage: true, mode: 'logo' }
   ];
 
   const pegboard = document.getElementById('pegboard');
@@ -17,7 +17,7 @@
   const hamburger = document.getElementById('hamburger');
   const toolTag = document.getElementById('toolTag');
   const toolTitle = document.getElementById('toolTitle');
-  const inputLabel = document.getElementById('inputLabel');
+  const toolSub = document.getElementById('toolSub');
   const toolInput = document.getElementById('toolInput');
   const toolForm = document.getElementById('toolForm');
   const runBtn = document.getElementById('runBtn');
@@ -27,7 +27,7 @@
   const copyBtn = document.getElementById('copyBtn');
   const chatLog = document.getElementById('chatLog');
 
-  let activeId = 'chatbot';
+  let activeId = 'chat';
   let chatHistory = [];
 
   function renderPegboard() {
@@ -47,10 +47,9 @@
     const t = TOOLS.find((x) => x.id === id);
     const idx = TOOLS.findIndex((x) => x.id === id) + 1;
     toolTag.textContent = 'TOOL ' + String(idx).padStart(2, '0');
-    toolTitle.textContent = t.label;
-    inputLabel.textContent = t.inputLabel;
+    toolTitle.textContent = t.label.replace(/^\S+\s/, '');
+    toolSub.textContent = t.inputLabel;
     toolInput.placeholder = t.placeholder;
-    runBtn.textContent = t.btn;
     toolInput.value = '';
     statusEl.textContent = '';
     statusEl.classList.remove('err');
@@ -96,7 +95,7 @@
         const res = await fetch('/api/image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: value })
+          body: JSON.stringify({ prompt: value, mode: t.mode || 'image' })
         });
         const j = await res.json();
         if (!res.ok || j.error) throw new Error(j.error || 'request failed');
@@ -141,5 +140,5 @@
   });
 
   renderPegboard();
-  selectTool('chatbot');
+  selectTool('chat');
 })();
