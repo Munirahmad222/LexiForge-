@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LexiForge — AI Language & Creation Suite</title>
-<meta name="description" content="LexiForge: chatbot, image generator, story writer, shayari generator, caption generator, email writer, resume writer and code generator — free AI tools, one workspace.">
+<meta name="description" content="LexiForge: chat, writing, image, coding, SEO, social media, marketing, business and logo tools — free AI, one workspace.">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,23 +21,24 @@
 </div>
 
 <main class="bay">
-  <header class="bay-head">
-    <button class="hamburger" id="hamburger" aria-label="Open tools">☰</button>
-    <div>
-      <div class="bay-eyebrow" id="toolTag">TOOL 01</div>
-      <h1 id="toolTitle">AI Chatbot</h1>
-    </div>
-  </header>
+  <button class="hamburger" id="hamburger" aria-label="Open tools">☰</button>
 
   <section class="bay-body">
-    <form id="toolForm" class="tool-form">
-      <label id="inputLabel" for="toolInput">Ask anything</label>
-      <textarea id="toolInput" rows="5" placeholder="Type here..." required></textarea>
-      <div class="form-row">
-        <button type="submit" class="run-btn" id="runBtn">Generate</button>
-        <span class="status" id="status"></span>
-      </div>
+    <header class="hero">
+      <div class="hero-eyebrow" id="toolTag">TOOL 01</div>
+      <h1 id="toolTitle">AI Chat</h1>
+      <p class="hero-sub" id="toolSub">Ask anything</p>
+    </header>
+
+    <form id="toolForm" class="composer">
+      <textarea id="toolInput" rows="4" placeholder="Type here..." required></textarea>
+      <button type="submit" class="run-btn" id="runBtn" aria-label="Generate">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </form>
+
+    <div class="examples" id="examples"></div>
+    <div class="status" id="status"></div>
 
     <div class="output-wrap" id="outputWrap" hidden>
       <div class="output-bar">
