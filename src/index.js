@@ -6,48 +6,52 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // CORS Handling
+    // Handle CORS Preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS });
     }
 
     try {
-      // Normal Text Generation
+      // 1. Text Generation API
       if (url.pathname === '/api/generate' && request.method === 'POST') {
-        const res = await handleGenerate(request, env);
-        Object.entries(CORS).forEach(([k, v]) => res.headers.set(k, v));
-        return res;
+        return await handleGenerate(request, env);
       }
       
-      // Image Generation
+      // 2. Image Generation API
       if (url.pathname === '/api/image' && request.method === 'POST') {
-        const res = await handleImage(request, env);
-        Object.entries(CORS).forEach(([k, v]) => res.headers.set(k, v));
-        return res;
+        return await handleImage(request, env);
       }
 
-      // 🔴 MISSING VISION API - Adding it now!
+      // 3. Vision API (For processing uploaded images)
       if (url.pathname === '/api/vision' && request.method === 'POST') {
         const body = await request.json();
         
-        // Cloudflare AI Model Call
+        if (!body.imageBase64) {
+          throw new Error("No image data provided");
+        }
+
+        // Processing image using Cloudflare AI
         const response = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
           prompt: body.prompt || "Describe this image",
           image: [...Uint8Array.from(atob(body.imageBase64), c => c.charCodeAt(0))]
         });
 
-        return new Response(JSON.stringify({ output: response.description || response.response || "I see the image but can't describe it." }), {
+        const result = response.description || response.response || "Analysis complete, but no text output generated.";
+
+        return new Response(JSON.stringify({ output: result }), {
           headers: { 'Content-Type': 'application/json', ...CORS }
         });
       }
 
     } catch (e) {
-      return new Response(JSON.stringify({ error: String(e.message || e) }), {
+      // Error handling
+      return new Response(JSON.stringify({ error: e.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
 
+    // Default: Serve static assets
     return env.ASSETS.fetch(request);
   }
 };
