@@ -51,19 +51,47 @@
     attachThumb.src = '';
   }
 
+  function resizeImage(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+            else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   attachBtn.addEventListener('click', () => fileInput.click());
 
-  fileInput.addEventListener('change', () => {
+  fileInput.addEventListener('change', async () => {
     const file = fileInput.files && fileInput.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
+    statusEl.textContent = 'Preparing image…';
+    try {
+      const dataUrl = await resizeImage(file, 1024, 0.75);
       attachedImage = { dataUrl, base64: dataUrl.split(',')[1] };
       attachThumb.src = dataUrl;
       attachRow.hidden = false;
-    };
-    reader.readAsDataURL(file);
+      statusEl.textContent = '';
+    } catch (e) {
+      statusEl.textContent = 'Couldn\u2019t read that image — try another one';
+      statusEl.classList.add('err');
+    }
   });
 
   attachRemove.addEventListener('click', clearAttachment);
