@@ -12,25 +12,20 @@ export default {
 
     try {
       if (url.pathname === '/api/generate' && request.method === 'POST') {
-        const res = await handleGenerate(request, env);
-        return res;
+        return await handleGenerate(request, env);
       }
 
       if (url.pathname === '/api/image' && request.method === 'POST') {
-        const res = await handleImage(request, env);
-        return res;
+        return await handleImage(request, env);
       }
 
       if (url.pathname === '/api/vision' && request.method === 'POST') {
         const body = await request.json();
-        if (!body.imageBase64) throw new Error("Missing image data");
-
-        const aiResponse = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+        const response = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
           prompt: body.prompt || "Describe this image",
           image: [...Uint8Array.from(atob(body.imageBase64), c => c.charCodeAt(0))]
         });
-
-        const output = aiResponse.description || aiResponse.response || "Image analyzed.";
+        const output = response.description || response.response || "Done";
         return new Response(JSON.stringify({ output }), {
           headers: { 'Content-Type': 'application/json', ...CORS }
         });
