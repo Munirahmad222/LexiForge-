@@ -31,7 +31,7 @@ export default {
         }
 
         // Processing image using Cloudflare AI
-        const response = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+        const response = await env.AI.run('@cf/llava-hf/llava-1.5-7b-hf', {
           prompt: body.prompt || "Describe this image",
           image: [...Uint8Array.from(atob(body.imageBase64), c => c.charCodeAt(0))]
         });
