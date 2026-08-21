@@ -36,6 +36,37 @@
   const copyBtn = document.getElementById('copyBtn');
   const chatLog = document.getElementById('chatLog');
   const examplesEl = document.getElementById('examples');
+  const attachBtn = document.getElementById('attachBtn');
+  const fileInput = document.getElementById('fileInput');
+  const attachRow = document.getElementById('attachRow');
+  const attachThumb = document.getElementById('attachThumb');
+  const attachRemove = document.getElementById('attachRemove');
+
+  let attachedImage = null; // { dataUrl, base64 }
+
+  function clearAttachment() {
+    attachedImage = null;
+    fileInput.value = '';
+    attachRow.hidden = true;
+    attachThumb.src = '';
+  }
+
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      attachedImage = { dataUrl, base64: dataUrl.split(',')[1] };
+      attachThumb.src = dataUrl;
+      attachRow.hidden = false;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  attachRemove.addEventListener('click', clearAttachment);
 
   let activeId = 'chat';
   let chatHistory = [];
@@ -65,6 +96,7 @@
     examplesEl.querySelectorAll('.example-pill').forEach((btn) => {
       btn.addEventListener('click', () => {
         toolInput.value = btn.textContent;
+        autoGrow();
         toolInput.focus();
       });
     });
@@ -79,7 +111,9 @@
     toolSub.textContent = t.inputLabel;
     toolInput.placeholder = t.placeholder;
     toolInput.value = '';
-    toolInput.style.height = 'auto';
+    autoGrow();
+    clearAttachment();
+    attachBtn.hidden = !!t.isImage;
     statusEl.textContent = '';
     statusEl.classList.remove('err');
     outputWrap.hidden = true;
@@ -96,10 +130,18 @@
   hamburger.addEventListener('click', openRack);
   scrim.addEventListener('click', closeRack);
 
-  function addChatMsg(role, text) {
+  function addChatMsg(role, text, imageDataUrl) {
     const div = document.createElement('div');
     div.className = 'chat-msg ' + role;
-    div.textContent = text;
+    if (imageDataUrl) {
+      const img = document.createElement('img');
+      img.src = imageDataUrl;
+      img.className = 'chat-img';
+      div.appendChild(img);
+    }
+    const p = document.createElement('div');
+    p.textContent = text;
+    div.appendChild(p);
     chatLog.appendChild(div);
     chatLog.scrollTop = chatLog.scrollHeight;
   }
@@ -114,10 +156,14 @@
     statusEl.classList.remove('err');
     statusEl.textContent = 'Working…';
 
+    let pendingImage = attachedImage;
+
     if (t.isChat) {
-      addChatMsg('user', value);
+      addChatMsg('user', value, pendingImage ? pendingImage.dataUrl : null);
       chatHistory.push({ role: 'user', content: value });
       toolInput.value = '';
+      autoGrow();
+      clearAttachment();
     }
 
     try {
@@ -134,6 +180,22 @@
         img.src = j.image;
         output.appendChild(img);
         outputWrap.hidden = false;
+      } else if (pendingImage) {
+        const res = await fetch('/api/vision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: value, imageBase64: pendingImage.base64 })
+        });
+        const j = await res.json();
+        if (!res.ok || j.error) throw new Error(j.error || 'request failed');
+
+        if (t.isChat) {
+          addChatMsg('assistant', j.output);
+          chatHistory.push({ role: 'assistant', content: j.output });
+        } else {
+          output.textContent = j.output;
+          outputWrap.hidden = false;
+        }
       } else {
         const res = await fetch('/api/generate', {
           method: 'POST',
