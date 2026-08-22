@@ -163,8 +163,11 @@ body{
 }
 .mic-btn:hover{border-color:var(--amber); color:var(--amber);}
 .mic-btn.listening{background:#ff4d4d; color:#fff; border-color:#ff4d4d; animation:pulse 1.2s infinite;}
+.mic-btn.thinking{background:var(--ink3); color:#fff; border-color:var(--ink3);}
+.mic-btn.speaking{background:var(--amber); color:#1a1200; border-color:var(--amber); animation:pulse-amber 1s infinite;}
 .mic-btn[hidden]{display:none;}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,0.5);} 50%{box-shadow:0 0 0 8px rgba(255,77,77,0);}}
+@keyframes pulse-amber{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,0.5);} 50%{box-shadow:0 0 0 8px rgba(245,166,35,0);}}
 
 .run-btn{
   position:absolute; right:11px; bottom:11px;
