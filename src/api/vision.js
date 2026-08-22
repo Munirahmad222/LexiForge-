@@ -1,41 +1,31 @@
-import { CORS } from '../utils.js';
+import { json } from '../utils.js';
 
 export async function handleVision(request, env) {
+  let body;
   try {
-    const body = await request.json();
-    const prompt = body.prompt || "Describe this image";
-    const imageBase64 = body.imageBase64;
+    body = await request.json();
+  } catch (e) {
+    return json({ error: 'invalid request body' }, 400);
+  }
 
-    if (!imageBase64) {
-      return new Response(JSON.stringify({ error: 'Image is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...CORS }
-      });
-    }
+  const prompt = (body && body.prompt) ? String(body.prompt).trim() : 'Describe this image.';
+  const imageBase64 = body && body.imageBase64;
+  if (!imageBase64) return json({ error: 'imageBase64 is required' }, 400);
 
-    // Convert Base64 to Binary
+  try {
     const binary = atob(imageBase64);
     const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-    // Run Cloudflare AI
-    const result = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
-      prompt: prompt,
-      image: [...bytes]
+    const result = await env.AI.run('@cf/llava-hf/llava-1.5-7b-hf', {
+      image: Array.from(bytes),
+      prompt,
+      max_tokens: 512
     });
-
-    const output = result.description || result.response || "Analysis complete.";
-
-    return new Response(JSON.stringify({ output }), {
-      headers: { 'Content-Type': 'application/json', ...CORS }
-    });
-
+    const output = (result && (result.description || result.response)) || '';
+    if (!output) throw new Error('empty response from model');
+    return json({ output });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...CORS }
-    });
+    return json({ error: String(e.message || e) }, 500);
   }
 }
