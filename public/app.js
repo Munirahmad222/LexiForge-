@@ -119,6 +119,61 @@
   });
   attachRemove.addEventListener('click', clearAttachment);
 
+  /* ---------- voice input ---------- */
+  const micBtn = document.getElementById('micBtn');
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognizer = null;
+  let listening = false;
+
+  if (!SpeechRecognitionCtor) {
+    micBtn.hidden = true;
+  } else {
+    recognizer = new SpeechRecognitionCtor();
+    recognizer.continuous = true;
+    recognizer.interimResults = true;
+    recognizer.lang = navigator.language || 'en-US';
+
+    let baseText = '';
+
+    recognizer.onresult = (e) => {
+      let finalText = '';
+      let interimText = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t;
+        else interimText += t;
+      }
+      if (finalText) baseText += finalText;
+      toolInput.value = (baseText + interimText).trim();
+      autoGrow();
+    };
+
+    recognizer.onerror = () => {
+      listening = false;
+      micBtn.classList.remove('listening');
+    };
+
+    recognizer.onend = () => {
+      listening = false;
+      micBtn.classList.remove('listening');
+    };
+
+    micBtn.addEventListener('click', () => {
+      if (listening) {
+        recognizer.stop();
+        listening = false;
+        micBtn.classList.remove('listening');
+      } else {
+        baseText = toolInput.value ? toolInput.value + ' ' : '';
+        try {
+          recognizer.start();
+          listening = true;
+          micBtn.classList.add('listening');
+        } catch (e) { /* already started, ignore */ }
+      }
+    });
+  }
+
   /* ---------- sidebar ---------- */
   function renderPegboard() {
     pegboard.innerHTML = TOOLS.map((t, i) => `
@@ -227,7 +282,12 @@
   }
 
   /* ---------- tool switching ---------- */
+  function stopListening() {
+    if (recognizer && listening) { recognizer.stop(); listening = false; micBtn.classList.remove('listening'); }
+  }
+
   function selectTool(id) {
+    stopListening();
     activeId = id;
     const t = TOOLS.find((x) => x.id === id);
     toolTitle.textContent = t.label.replace(/^\S+\s/, '');
@@ -250,6 +310,7 @@
   /* ---------- submit ---------- */
   toolForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    stopListening();
     const t = TOOLS.find((x) => x.id === activeId);
     const value = toolInput.value.trim();
     if (!value) return;
