@@ -20,6 +20,9 @@
       examples: ['A tech startup called Nova', 'A bakery called Sweet Crumb', 'A fitness brand called Iron Pulse'] }
   ];
 
+  const HISTORY_DAYS = 30;
+  const HISTORY_MS = HISTORY_DAYS * 24 * 60 * 60 * 1000;
+
   const pegboard = document.getElementById('pegboard');
   const rack = document.getElementById('rack');
   const scrim = document.getElementById('scrim');
@@ -30,10 +33,8 @@
   const toolForm = document.getElementById('toolForm');
   const runBtn = document.getElementById('runBtn');
   const statusEl = document.getElementById('status');
-  const outputWrap = document.getElementById('outputWrap');
-  const output = document.getElementById('output');
-  const copyBtn = document.getElementById('copyBtn');
   const chatLog = document.getElementById('chatLog');
+  const logScroll = document.getElementById('logScroll');
   const examplesEl = document.getElementById('examples');
   const attachBtn = document.getElementById('attachBtn');
   const fileInput = document.getElementById('fileInput');
@@ -42,9 +43,31 @@
   const attachRemove = document.getElementById('attachRemove');
 
   let activeId = 'chat';
-  let chatHistory = [];
+  let history = []; // persisted messages for the active tool
   let attachedImage = null; // { dataUrl, base64 }
 
+  /* ---------- persistence ---------- */
+  function historyKey(id) { return 'lexiforge_hist_' + id; }
+
+  function loadHistory(id) {
+    try {
+      const raw = localStorage.getItem(historyKey(id));
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      const cutoff = Date.now() - HISTORY_MS;
+      const kept = arr.filter((m) => (m.ts || 0) >= cutoff);
+      if (kept.length !== arr.length) saveHistory(id, kept);
+      return kept;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHistory(id, arr) {
+    try { localStorage.setItem(historyKey(id), JSON.stringify(arr)); } catch (e) { /* storage full/unavailable, ignore */ }
+  }
+
+  /* ---------- attachment ---------- */
   function clearAttachment() {
     attachedImage = null;
     fileInput.value = '';
@@ -94,9 +117,9 @@
       statusEl.classList.add('err');
     }
   });
-
   attachRemove.addEventListener('click', clearAttachment);
 
+  /* ---------- sidebar ---------- */
   function renderPegboard() {
     pegboard.innerHTML = TOOLS.map((t, i) => `
       <button class="peg${t.id === activeId ? ' active' : ''}" data-id="${t.id}">
@@ -109,13 +132,20 @@
     });
   }
 
+  function openRack() { rack.classList.add('open'); scrim.classList.add('show'); }
+  function closeRack() { rack.classList.remove('open'); scrim.classList.remove('show'); }
+  hamburger.addEventListener('click', openRack);
+  scrim.addEventListener('click', closeRack);
+
+  /* ---------- composer ---------- */
   function autoGrow() {
     toolInput.style.height = 'auto';
-    toolInput.style.height = Math.min(toolInput.scrollHeight, 220) + 'px';
+    toolInput.style.height = Math.min(toolInput.scrollHeight, 180) + 'px';
   }
   toolInput.addEventListener('input', autoGrow);
 
   function renderExamples(t) {
+    if (history.length) { examplesEl.innerHTML = ''; return; }
     examplesEl.innerHTML = (t.examples || []).map((ex) =>
       `<button type="button" class="example-pill">${ex}</button>`
     ).join('');
@@ -128,6 +158,75 @@
     });
   }
 
+  /* ---------- message rendering ---------- */
+  function scrollToBottom() {
+    logScroll.scrollTop = logScroll.scrollHeight;
+  }
+
+  function buildMsgEl(msg) {
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + (msg.role === 'user' ? 'user' : (msg.type === 'error' ? 'error' : 'assistant'));
+
+    if (msg.type === 'image' && msg.image) {
+      const img = document.createElement('img');
+      img.src = msg.image;
+      img.className = 'chat-img';
+      div.appendChild(img);
+    } else {
+      const p = document.createElement('div');
+      p.textContent = msg.text || '';
+      div.appendChild(p);
+    }
+
+    if (msg.role === 'user' && msg.image) {
+      const thumb = document.createElement('img');
+      thumb.src = msg.image;
+      thumb.className = 'chat-img';
+      thumb.style.marginTop = '8px';
+      div.appendChild(thumb);
+    }
+
+    if (msg.role === 'assistant' && msg.type !== 'image' && msg.type !== 'error' && msg.text) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'copy-msg-btn';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(msg.text).then(() => {
+          btn.textContent = 'Copied';
+          setTimeout(() => (btn.textContent = 'Copy'), 1200);
+        });
+      });
+      div.appendChild(btn);
+    }
+    return div;
+  }
+
+  function renderLog() {
+    chatLog.innerHTML = '';
+    history.forEach((msg) => chatLog.appendChild(buildMsgEl(msg)));
+    scrollToBottom();
+  }
+
+  function appendMessage(msg, persist) {
+    chatLog.appendChild(buildMsgEl(msg));
+    scrollToBottom();
+    if (persist) {
+      history.push(msg);
+      saveHistory(activeId, history);
+    }
+  }
+
+  function showTyping() {
+    const div = document.createElement('div');
+    div.className = 'chat-msg assistant';
+    div.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+    chatLog.appendChild(div);
+    scrollToBottom();
+    return div;
+  }
+
+  /* ---------- tool switching ---------- */
   function selectTool(id) {
     activeId = id;
     const t = TOOLS.find((x) => x.id === id);
@@ -140,36 +239,15 @@
     attachBtn.hidden = !!t.isImage;
     statusEl.textContent = '';
     statusEl.classList.remove('err');
-    outputWrap.hidden = true;
-    chatLog.hidden = !t.isChat;
-    chatLog.innerHTML = '';
-    chatHistory = [];
-    renderPegboard();
+
+    history = loadHistory(id);
+    renderLog();
     renderExamples(t);
+    renderPegboard();
     closeRack();
   }
 
-  function openRack() { rack.classList.add('open'); scrim.classList.add('show'); }
-  function closeRack() { rack.classList.remove('open'); scrim.classList.remove('show'); }
-  hamburger.addEventListener('click', openRack);
-  scrim.addEventListener('click', closeRack);
-
-  function addChatMsg(role, text, imageDataUrl) {
-    const div = document.createElement('div');
-    div.className = 'chat-msg ' + role;
-    if (imageDataUrl) {
-      const img = document.createElement('img');
-      img.src = imageDataUrl;
-      img.className = 'chat-img';
-      div.appendChild(img);
-    }
-    const p = document.createElement('div');
-    p.textContent = text;
-    div.appendChild(p);
-    chatLog.appendChild(div);
-    chatLog.scrollTop = chatLog.scrollHeight;
-  }
-
+  /* ---------- submit ---------- */
   toolForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const t = TOOLS.find((x) => x.id === activeId);
@@ -178,18 +256,20 @@
 
     runBtn.disabled = true;
     statusEl.classList.remove('err');
-    statusEl.textContent = 'Working…';
+    statusEl.textContent = '';
 
     const currentInput = value;
     const pendingImage = attachedImage;
 
     toolInput.value = '';
     autoGrow();
-    if (t.isChat) {
-      addChatMsg('user', currentInput, pendingImage ? pendingImage.dataUrl : null);
-      chatHistory.push({ role: 'user', content: currentInput });
-      clearAttachment();
-    }
+    clearAttachment();
+
+    const userMsg = { role: 'user', type: 'text', text: currentInput, image: pendingImage ? pendingImage.dataUrl : undefined, ts: Date.now() };
+    appendMessage(userMsg, true);
+    renderExamples(t); // hide examples now that there's history
+
+    const typingEl = showTyping();
 
     try {
       let res;
@@ -209,46 +289,26 @@
         res = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tool: t.id, input: currentInput, history: chatHistory })
+          body: JSON.stringify({ tool: t.id, input: currentInput, history: history.slice(-20).map((m) => ({ role: m.role, content: m.text || '' })) })
         });
       }
 
       const j = await res.json();
       if (!res.ok || j.error) throw new Error(j.error || 'request failed');
 
+      typingEl.remove();
+
       if (t.isImage) {
-        output.innerHTML = '';
-        const img = document.createElement('img');
-        img.src = j.image;
-        output.appendChild(img);
-        outputWrap.hidden = false;
-      } else if (t.isChat) {
-        addChatMsg('assistant', j.output);
-        chatHistory.push({ role: 'assistant', content: j.output });
+        appendMessage({ role: 'assistant', type: 'image', image: j.image, ts: Date.now() }, true);
       } else {
-        output.textContent = j.output;
-        outputWrap.hidden = false;
+        appendMessage({ role: 'assistant', type: 'text', text: j.output, ts: Date.now() }, true);
       }
-      statusEl.textContent = '';
     } catch (err) {
-      statusEl.textContent = 'Couldn\u2019t generate that — ' + (err.message || 'try again');
-      statusEl.classList.add('err');
-      if (!t.isChat) {
-        toolInput.value = currentInput;
-        autoGrow();
-      }
+      typingEl.remove();
+      appendMessage({ role: 'assistant', type: 'error', text: 'Couldn\u2019t generate that — ' + (err.message || 'try again'), ts: Date.now() }, false);
     } finally {
       runBtn.disabled = false;
     }
-  });
-
-  copyBtn.addEventListener('click', () => {
-    const text = output.textContent;
-    if (!text) return;
-    navigator.clipboard.writeText(text).then(() => {
-      copyBtn.textContent = 'Copied';
-      setTimeout(() => (copyBtn.textContent = 'Copy'), 1200);
-    });
   });
 
   renderPegboard();
