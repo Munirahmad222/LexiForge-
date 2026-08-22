@@ -119,23 +119,67 @@
   });
   attachRemove.addEventListener('click', clearAttachment);
 
-  /* ---------- voice input ---------- */
+  /* ---------- live voice mode: listen, auto-send, speak reply, listen again ---------- */
   const micBtn = document.getElementById('micBtn');
   const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const canSpeak = 'speechSynthesis' in window;
   let recognizer = null;
   let listening = false;
+  let liveMode = false;
+  let voiceLang = navigator.language || 'en-US';
+
+  function setMicState(state) {
+    micBtn.classList.remove('listening', 'thinking', 'speaking');
+    if (state) micBtn.classList.add(state);
+  }
+
+  function speak(text) {
+    return new Promise((resolve) => {
+      if (!canSpeak || !text) { resolve(); return; }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = voiceLang;
+      utter.onend = resolve;
+      utter.onerror = resolve;
+      setMicState('speaking');
+      statusEl.textContent = '\ud83d\udd0a Speaking\u2026';
+      window.speechSynthesis.speak(utter);
+    });
+  }
+
+  function startListening() {
+    if (!recognizer) return;
+    try {
+      recognizer.start();
+      listening = true;
+      setMicState('listening');
+      statusEl.textContent = '\ud83c\udfa4 Listening\u2026 speak now';
+    } catch (e) { /* already running */ }
+  }
+
+  function stopListening() {
+    listening = false;
+    if (recognizer) { try { recognizer.stop(); } catch (e) {} }
+    setMicState(null);
+  }
+
+  function exitLiveMode() {
+    liveMode = false;
+    stopListening();
+    if (canSpeak) window.speechSynthesis.cancel();
+    setMicState(null);
+    statusEl.textContent = '';
+  }
 
   if (!SpeechRecognitionCtor) {
     micBtn.hidden = true;
   } else {
     recognizer = new SpeechRecognitionCtor();
-    recognizer.continuous = true;
+    recognizer.continuous = false;
     recognizer.interimResults = true;
-    recognizer.lang = navigator.language || 'en-US';
+    recognizer.lang = voiceLang;
 
-    let baseText = '';
-
-    recognizer.onresult = (e) => {
+    recognizer.onresult = async (e) => {
       let finalText = '';
       let interimText = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -143,33 +187,41 @@
         if (e.results[i].isFinal) finalText += t;
         else interimText += t;
       }
-      if (finalText) baseText += finalText;
-      toolInput.value = (baseText + interimText).trim();
-      autoGrow();
+      if (interimText) statusEl.textContent = '\ud83c\udfa4 ' + interimText;
+
+      if (finalText.trim()) {
+        listening = false;
+        try { recognizer.stop(); } catch (er) {}
+        setMicState('thinking');
+        statusEl.textContent = '\ud83d\udcad Thinking\u2026';
+        const reply = await runGeneration(finalText.trim(), null);
+        if (liveMode) {
+          if (reply) await speak(reply);
+          if (liveMode) startListening();
+        }
+      }
     };
 
     recognizer.onerror = () => {
       listening = false;
-      micBtn.classList.remove('listening');
+      if (liveMode) {
+        setMicState(null);
+        statusEl.textContent = 'Didn\u2019t catch that \u2014 tap the mic to try again';
+      }
     };
 
     recognizer.onend = () => {
-      listening = false;
-      micBtn.classList.remove('listening');
+      if (listening) { listening = false; }
     };
 
     micBtn.addEventListener('click', () => {
-      if (listening) {
-        recognizer.stop();
-        listening = false;
-        micBtn.classList.remove('listening');
+      if (liveMode) {
+        exitLiveMode();
       } else {
-        baseText = toolInput.value ? toolInput.value + ' ' : '';
-        try {
-          recognizer.start();
-          listening = true;
-          micBtn.classList.add('listening');
-        } catch (e) { /* already started, ignore */ }
+        liveMode = true;
+        voiceLang = navigator.language || 'en-US';
+        recognizer.lang = voiceLang;
+        startListening();
       }
     });
   }
@@ -282,12 +334,8 @@
   }
 
   /* ---------- tool switching ---------- */
-  function stopListening() {
-    if (recognizer && listening) { recognizer.stop(); listening = false; micBtn.classList.remove('listening'); }
-  }
-
   function selectTool(id) {
-    stopListening();
+    exitLiveMode();
     activeId = id;
     const t = TOOLS.find((x) => x.id === id);
     toolTitle.textContent = t.label.replace(/^\S+\s/, '');
@@ -297,6 +345,7 @@
     autoGrow();
     clearAttachment();
     attachBtn.hidden = !!t.isImage;
+    micBtn.hidden = !!t.isImage || !SpeechRecognitionCtor;
     statusEl.textContent = '';
     statusEl.classList.remove('err');
 
@@ -307,30 +356,19 @@
     closeRack();
   }
 
-  /* ---------- submit ---------- */
-  toolForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    stopListening();
-    const t = TOOLS.find((x) => x.id === activeId);
-    const value = toolInput.value.trim();
-    if (!value) return;
-
+  /* ---------- core generation (shared by typed submit + live voice) ---------- */
+  async function runGeneration(currentInput, pendingImage) {
     runBtn.disabled = true;
     statusEl.classList.remove('err');
-    statusEl.textContent = '';
 
-    const currentInput = value;
-    const pendingImage = attachedImage;
-
-    toolInput.value = '';
-    autoGrow();
-    clearAttachment();
+    const t = TOOLS.find((x) => x.id === activeId);
 
     const userMsg = { role: 'user', type: 'text', text: currentInput, image: pendingImage ? pendingImage.dataUrl : undefined, ts: Date.now() };
     appendMessage(userMsg, true);
-    renderExamples(t); // hide examples now that there's history
+    renderExamples(t);
 
     const typingEl = showTyping();
+    let assistantText = null;
 
     try {
       let res;
@@ -363,6 +401,7 @@
         appendMessage({ role: 'assistant', type: 'image', image: j.image, ts: Date.now() }, true);
       } else {
         appendMessage({ role: 'assistant', type: 'text', text: j.output, ts: Date.now() }, true);
+        assistantText = j.output;
       }
     } catch (err) {
       typingEl.remove();
@@ -370,6 +409,23 @@
     } finally {
       runBtn.disabled = false;
     }
+    return assistantText;
+  }
+
+  /* ---------- submit ---------- */
+  toolForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    exitLiveMode();
+    const value = toolInput.value.trim();
+    if (!value) return;
+
+    const currentInput = value;
+    const pendingImage = attachedImage;
+    toolInput.value = '';
+    autoGrow();
+    clearAttachment();
+
+    await runGeneration(currentInput, pendingImage);
   });
 
   renderPegboard();
