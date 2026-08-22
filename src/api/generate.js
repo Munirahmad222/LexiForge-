@@ -16,7 +16,7 @@ export async function handleGenerate(request, env) {
 
   const messages = [{ role: 'system', content: def.system }];
 
-  if (tool === 'chatbot' && Array.isArray(history)) {
+  if (tool === 'chat' && Array.isArray(history)) {
     for (const turn of history.slice(-10)) {
       if (turn && (turn.role === 'user' || turn.role === 'assistant') && turn.content) {
         messages.push({ role: turn.role, content: String(turn.content) });
