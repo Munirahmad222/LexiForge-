@@ -23,12 +23,17 @@
 <main class="bay">
   <button class="hamburger" id="hamburger" aria-label="Open tools">☰</button>
 
-  <section class="bay-body">
-    <header class="hero">
-      <h1 id="toolTitle">AI Chat</h1>
-      <p class="hero-sub" id="toolSub">Ask anything</p>
-    </header>
+  <header class="topbar">
+    <h1 id="toolTitle">AI Chat</h1>
+    <p class="topbar-sub" id="toolSub">Ask anything</p>
+  </header>
 
+  <div class="log-scroll" id="logScroll">
+    <div class="examples" id="examples"></div>
+    <div class="chat-log" id="chatLog"></div>
+  </div>
+
+  <div class="composer-dock">
     <form id="toolForm" class="composer">
       <div class="attach-row" id="attachRow" hidden>
         <div class="attach-chip" id="attachChip">
@@ -45,20 +50,8 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </form>
-
-    <div class="examples" id="examples"></div>
     <div class="status" id="status"></div>
-
-    <div class="output-wrap" id="outputWrap" hidden>
-      <div class="output-bar">
-        <span>Output</span>
-        <button class="copy-btn" id="copyBtn" type="button">Copy</button>
-      </div>
-      <div class="output" id="output"></div>
-    </div>
-
-    <div class="chat-log" id="chatLog" hidden></div>
-  </section>
+  </div>
 </main>
 
 <div class="scrim" id="scrim"></div>
