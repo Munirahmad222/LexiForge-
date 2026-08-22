@@ -28,7 +28,7 @@ export async function handleGenerate(request, env) {
   try {
     const result = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
       messages,
-      max_tokens: 1200
+      max_tokens: 1800
     });
     const output = (result && (result.response || result.result)) || '';
     if (!output) throw new Error('empty response from model');
