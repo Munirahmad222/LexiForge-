@@ -1,6 +1,7 @@
 import { CORS } from './utils.js';
 import { handleGenerate } from './api/generate.js';
 import { handleImage } from './api/image.js';
+import { handleVision } from './api/vision.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -16,6 +17,9 @@ export default {
       }
       if (url.pathname === '/api/image' && request.method === 'POST') {
         return await handleImage(request, env);
+      }
+      if (url.pathname === '/api/vision' && request.method === 'POST') {
+        return await handleVision(request, env);
       }
     } catch (e) {
       return new Response(JSON.stringify({ error: String(e.message || e) }), {
