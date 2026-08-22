@@ -130,7 +130,7 @@ body{
 .composer textarea{
   width:100%; border:none; outline:none; resize:none; overflow-y:hidden;
   font-family:var(--sans); font-size:16px; line-height:1.55; color:var(--ink);
-  background:transparent; padding:14px 100px 14px 18px; min-height:50px; max-height:180px;
+  background:transparent; padding:14px 138px 14px 18px; min-height:50px; max-height:180px;
   display:block;
 }
 .composer textarea::placeholder{color:#5a6274;}
@@ -145,7 +145,7 @@ body{
 }
 
 .attach-btn{
-  position:absolute; right:58px; bottom:11px;
+  position:absolute; right:96px; bottom:11px;
   width:36px; height:36px; border-radius:50%;
   background:transparent; color:var(--ink3); border:1px solid var(--hair);
   display:flex; align-items:center; justify-content:center;
@@ -153,6 +153,18 @@ body{
 }
 .attach-btn:hover{border-color:var(--amber); color:var(--amber);}
 .attach-btn[hidden]{display:none;}
+
+.mic-btn{
+  position:absolute; right:58px; bottom:11px;
+  width:36px; height:36px; border-radius:50%;
+  background:transparent; color:var(--ink3); border:1px solid var(--hair);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:border-color .15s ease, color .15s ease, background .15s ease;
+}
+.mic-btn:hover{border-color:var(--amber); color:var(--amber);}
+.mic-btn.listening{background:#ff4d4d; color:#fff; border-color:#ff4d4d; animation:pulse 1.2s infinite;}
+.mic-btn[hidden]{display:none;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,0.5);} 50%{box-shadow:0 0 0 8px rgba(255,77,77,0);}}
 
 .run-btn{
   position:absolute; right:11px; bottom:11px;
@@ -203,6 +215,7 @@ body{
 @media (max-width: 860px){
   .topbar{padding:14px 16px 12px 56px;}
   .topbar h1{font-size:18px;}
-  .composer textarea{padding:14px 92px 14px 14px;}
-  .attach-btn{right:52px;}
+  .composer textarea{padding:14px 128px 14px 14px;}
+  .attach-btn{right:90px;}
+  .mic-btn{right:52px;}
 }
